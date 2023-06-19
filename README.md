@@ -27,3 +27,7 @@
 - 当把vue项目通过一个平台打包发送到另一个平台运行时，可能会出现esbuild错误，解决方法：
     - rm -rf node_modules package-lock.json (把node_modules, package.lock.json删除)
     - npm install （重新安装）
+
+## 问题
+- 通过获取当前车辆撞状态的值，在此基础上进行控制值的变化，可能会存在跳值的情况
+- 点击一次获取车辆的当前状态，将点击的值在当前状态的基础上+1/-1，点击多次同样只能+1/-1，问题暂未解决

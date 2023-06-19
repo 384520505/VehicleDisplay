@@ -17,6 +17,11 @@
                 <el-col :span="14">
                     <el-row class="statuslist">
                         <span class="ml-3 w-35 text-gray-600 inline-flex items-center"
+                        >车辆连接状态:</span>
+                        <el-input class="el-input" v-model="isContect" label disabled />
+                    </el-row>
+                    <el-row class="statuslist">
+                        <span class="ml-3 w-35 text-gray-600 inline-flex items-center"
                         >地图:</span>
                         <el-input class="el-input" v-model="mapID" label disabled />
                     </el-row>
@@ -70,6 +75,16 @@
                         >设备开度:</span>
                         <el-input class="el-input" v-model="deviceLevel" label disabled />
                     </el-row>
+                    <el-row class="statuslist">
+                        <span class="ml-3 w-35 text-gray-600 inline-flex items-center"
+                        >地图状态:</span>
+                        <el-input class="el-input" v-model="mapStatus" label disabled />
+                    </el-row>
+                    <el-row class="statuslist">
+                        <span class="ml-3 w-35 text-gray-600 inline-flex items-center"
+                        >自主/遥控:</span>
+                        <el-input class="el-input" v-model="auto_contrl" label disabled />
+                    </el-row>
                 </el-col>
                 <el-col :span="10">
                     <div class="buttonlist"><el-button type="primary" @click="involve">导入</el-button></div>
@@ -81,6 +96,8 @@
                     <div class="buttonlist"><el-button type="primary" @click="deviceSwitch">作业/结束</el-button></div>
                     <div class="buttonlist"><el-button type="primary" @click="operDirection(1)">加大开度</el-button></div>
                     <div class="buttonlist"><el-button type="primary" @click="operDirection(0)">减小开度</el-button></div>
+                    <div class="buttonlist"><el-button type="primary" :disabled='isClick' @click="downloadMap">下载地图</el-button></div>
+                    <div class="buttonlist-last"><el-switch @change="shiftSwitch" v-model="isAuto_contrl" active-text="自主" inactive-text="遥控" /></div>
                     
                 </el-col>
             </el-row>
@@ -101,6 +118,9 @@ import {
     getMap
 } from '../js/Ajax.js';
 import { ElMessage, ElLoading } from 'element-plus';
+import { DownloadFile } from '../js/tools.js';
+import Papa from 'papaparse';
+import {DownLoad_MapID} from '../js/Constant.js'
 // import { bus } from '../js/EventBus.js'
 
 export default {
@@ -121,12 +141,17 @@ export default {
             deviceStatus: '',
             deviceStatusID: 0,
             deviceLevel:'', //设备开度
+            mapStatus:0, //用于显示车辆端上传地图的状态， 默认为0， 1是打点中，2是结束
+            isClick: true, //控制按钮是否可以点击, false表示可点击， true表示不可点击
+            isContect:'未连接', //表示车辆的连接状态，‘已连接’/‘未连接’
+            isAuto_contrl: true,  //true 表示自主， false表遥控
+            auto_contrl: '自主', //显示车辆的控制状态，自主/遥控
             
 
-            newMapID:'',
+            newMapID:'test',
             // newPathID:'',
-            newVehicleID:'',
-            newDeviceID:'',
+            newVehicleID:'test',
+            newDeviceID:'test',
 
             isInto: false,
 
@@ -145,10 +170,17 @@ export default {
     mounted(){
         this.updataData();
         // this.watchAndUpdata();
+        this.aliveCounter();
+        this.vehicleContect();
+        
     },
 
     // 帧听器
     watch:{
+        isAuto_contrl(newVlaue){
+            if(newVlaue) this.auto_contrl = '自主';
+            else this.auto_contrl = '遥控';
+        },
     },
 
     methods:{
@@ -209,22 +241,20 @@ export default {
             else this.vehicleStatus = '停止';
             // 获取车辆控制命令
             // 获取到原始的 控制指令 数据
-            // let originalCtrData = await getVehicleCmd(this.vehicleID);
-            // let originalCtrDataArr = originalCtrData.cmd.split(',');
-            // if(!originalCtrDataArr || originalCtrDataArr.length != 7){
-            //     this.vehicleStatus = '0';
-            //     ElMessage({
-            //         message: `获取的控制数据不符合规范！！！`,
-            //         type: 'warning',
-            //     })
-            // }else{
-            //     const cmd = originalCtrDataArr[0]*1;
-            //     if(cmd == 0) this.vehicleStatus = "0";
-            //     if(cmd == 1) this.vehicleStatus = "启动";
-            //     if(cmd == 2) this.vehicleStatus = "关闭";
-            // }
+            let originalCtrData = await getVehicleCmd(this.vehicleID);
+            let originalCtrDataArr = originalCtrData.cmd.split(',');
+            if(!originalCtrDataArr){
+                this.vehicleStatus = '0';
+                ElMessage({
+                    message: `获取的控制数据不符合规范！！！`,
+                    type: 'warning',
+                })
+            }else{
+                if(originalCtrDataArr[7]*1) this.isAuto_contrl = true;
+                else this.isAuto_contrl = false;
+            }
 
-            // 获取设备状态，数据结构： "1,2"  1表示设备启停状态，2表示设备开度
+            // 获取设备状态，数据结构： "1,2,1,0"  1表示设备启停状态，2表示设备开度,第三个数表示车辆端地图上传的状态（默认为0， 1表示打点中，2表示打点结束），第四个数表示心跳
             let device = await getDeviceStatus(this.newDeviceID);
             let originalDeviceStatus = device.split(',');
             
@@ -241,6 +271,9 @@ export default {
                 if(originalDeviceStatus[0]*1 === 2) this.deviceStatus = '结束';
                 this.deviceID = this.newDeviceID;
                 this.deviceLevel = originalDeviceStatus[1];
+                if(originalDeviceStatus[2]*1 === 0) { this.mapStatus = 0; this.isClick = true };
+                if(originalDeviceStatus[2]*1 === 1) { this.mapStatus = '打点中'; this.isClick = true };
+                if(originalDeviceStatus[2]*1 === 2) { this.mapStatus = '打点结束'; this.isClick = false };
             }
 
             this.isInto = true;
@@ -283,15 +316,25 @@ export default {
                 }
                 if(this.deviceID){
                     let device = await getDeviceStatus(this.newDeviceID);
-                    console.log(device)
                     let originalDeviceStatus = device.split(',');
                     if(originalDeviceStatus[0]*1 === 0) this.deviceStatus = 0;
                     if(originalDeviceStatus[0]*1 === 1) this.deviceStatus = '作业';
                     if(originalDeviceStatus[0]*1 === 2) this.deviceStatus = '结束';
                     this.deviceLevel = originalDeviceStatus[1];
+                    if(originalDeviceStatus[2]*1 === 0) { this.mapStatus = 0; this.isClick = true };
+                    if(originalDeviceStatus[2]*1 === 1) { this.mapStatus = '打点中'; this.isClick = true };
+                    if(originalDeviceStatus[2]*1 === 2) { this.mapStatus = '打点结束'; this.isClick = false };
                 }
             }, 1000);
         },
+
+        // 初始化控制指令的数据格式
+        // async initCmdFormate(){
+        //     const res = await updateVehicleCmd({
+        //         target: this.vehicleID,
+        //         cmd:'0,0,0,'
+        //     });
+        // },
 
         // 地图数据变更时，自动上传到服务器
         // watchAndUpdata(){
@@ -322,9 +365,9 @@ export default {
 
 
         /**
-         * 对于车辆的开关状态、设备的开关状态、地图编号、车辆速度、车辆航向角、设备控制等级
-         * 原始车辆控制接口中 cmd字段的数据是一个字符串，其中1-6个数据按顺序排列，
-         * 分别表示：车辆的开关状态、设备的开关状态、地图编号、车辆速度、车辆航向角、设备控制等级
+         * 对于车辆的开关状态、设备的开关状态、地图编号、车辆速度、车辆航向角、设备控制等级、心跳
+         * 原始车辆控制接口中 cmd字段的数据是一个字符串，其中1-7个数据按顺序排列，
+         * 分别表示：车辆的开关状态、设备的开关状态、地图编号、车辆速度、车辆航向角、设备控制等级、心跳
          */
         async operSpeed(sign){
             // if(!this.speed){
@@ -337,17 +380,18 @@ export default {
             // 获取到原始的 控制指令 数据
             let originalCtrData = await getVehicleCmd(this.vehicleID);
             let originalCtrDataArr = originalCtrData.cmd.split(',');
-            // 判断获取到的数据是否符合规范
-            if(!originalCtrDataArr || originalCtrDataArr.length != 6){
+            let vehicleStatus = await getVehicleStatus(this.vehicleID);
+            if(!vehicleStatus){
                 ElMessage({
-                    message:'获取的控制数据不符合规范！',
+                    message:'车辆状态不存在！！！',
                     type:'warning'
                 });
                 return;
             }
+            const { speed } = vehicleStatus;
             // 修改速度值
-            if(sign === 1) originalCtrDataArr[3] = originalCtrDataArr[3]*1 + 1;
-            if(sign === 0) originalCtrDataArr[3] = originalCtrDataArr[3]*1 - 1;
+            if(sign === 1) originalCtrDataArr[3] = speed*1 + 1;
+            if(sign === 0) originalCtrDataArr[3] = speed*1 - 1;
 
             // 将数组转为字符串
             let CtrDataArr = originalCtrDataArr.join(',');
@@ -371,18 +415,19 @@ export default {
             // 获取到原始的 控制指令 数据
             let  originalCtrData = await getVehicleCmd(this.vehicleID);
             let originalCtrDataArr = originalCtrData.cmd.split(',');
-            // 判断获取到的数据是否符合规范
-            if(!originalCtrDataArr || originalCtrDataArr.length != 6){
+            let vehicleStatus = await getVehicleStatus(this.vehicleID);
+            if(!vehicleStatus){
                 ElMessage({
-                    message:'获取的控制数据不符合规范！',
+                    message:'车辆状态不存在！！！',
                     type:'warning'
                 });
                 return;
             }
+            const { rudderAngle } = vehicleStatus;
 
             // 修改舵角值
-            if(sign === 1) originalCtrDataArr[5] = originalCtrDataArr[5]*1 + 1;
-            if(sign === 0) originalCtrDataArr[5] = originalCtrDataArr[5]*1 - 1;
+            if(sign === 1) originalCtrDataArr[5] = rudderAngle*1 + 1;
+            if(sign === 0) originalCtrDataArr[5] = rudderAngle*1 - 1;
 
             let CtrDataArr = originalCtrDataArr.join(',');
             
@@ -403,18 +448,19 @@ export default {
             // 获取到原始的 控制指令 数据
             let  originalCtrData = await getVehicleCmd(this.vehicleID);
             let originalCtrDataArr = originalCtrData.cmd.split(',');
-            // 判断获取到的数据是否符合规范
-            if(!originalCtrDataArr || originalCtrDataArr.length != 6){
+            let vehicleStatus = await getVehicleStatus(this.vehicleID);
+            if(!vehicleStatus){
                 ElMessage({
-                    message:'获取的控制数据不符合规范！',
+                    message:'车辆状态不存在！！！',
                     type:'warning'
                 });
                 return;
             }
+            const { direction } = vehicleStatus;
 
             // 修改方向值
-            if(sign === 1) originalCtrDataArr[4] = originalCtrDataArr[4]*1 + 1;
-            if(sign === 0) originalCtrDataArr[4] = originalCtrDataArr[4]*1 - 1;
+            if(sign === 1) originalCtrDataArr[4] = direction*1 + 1;
+            if(sign === 0) originalCtrDataArr[4] = direction*1 - 1;
 
             let CtrDataArr = originalCtrDataArr.join(',');
             
@@ -444,24 +490,22 @@ export default {
             // }
 
             // 获取到原始的 控制指令 数据
-            let  originalCtrData = await getVehicleCmd(this.vehicleID);
+            let originalCtrData = await getVehicleCmd(this.vehicleID);
             let originalCtrDataArr = originalCtrData.cmd.split(',');
-            // 判断获取到的数据是否符合规范
-            if(!originalCtrDataArr || originalCtrDataArr.length != 6){
+            let vehicleStatus = await getVehicleStatus(this.vehicleID);
+            if(!vehicleStatus){
                 ElMessage({
-                    message:'获取的控制数据不符合规范！',
+                    message:'车辆状态不存在！！！',
                     type:'warning'
                 });
                 return;
             }
+            const { speed } = vehicleStatus;
 
-            if(originalCtrDataArr[0]*1 === 0){
+            if(speed*1 <= 0){
                 originalCtrDataArr[0] = 1;
-            }
-            if(originalCtrDataArr[0]*1 === 1){
+            }else{
                 originalCtrDataArr[0] = 2;
-            }else if(originalCtrDataArr[0]*1 === 2){
-                originalCtrDataArr[0] = 1;
             }
 
             let CtrDataArr = originalCtrDataArr.join(',');
@@ -516,7 +560,7 @@ export default {
             let originalCtrData = await getVehicleCmd(this.newVehicleID);
             let originalCtrDataArr = originalCtrData.cmd.split(',');
             // 判断获取到的数据是否符合规范
-            if(!originalCtrDataArr || originalCtrDataArr.length != 6){
+            if(!originalCtrDataArr){
                 ElMessage({
                     message:'获取的控制数据不符合规范！',
                     type:'warning'
@@ -531,6 +575,106 @@ export default {
             });
             console.log('updateMapID',res);
             
+        },
+
+        // 下载地图
+        async downloadMap(){
+            let loading = ElLoading.service({
+                text:"Loading..."
+            });
+            // 获取地图数据
+            let mapArr = await getMap(this.newMapID);
+            const { coordinates } = mapArr;
+            if(!coordinates) return;
+            const csvData = Papa.unparse({
+                fields: ['MapID','ID', 'Longitude', 'Latitude', 'RudderAngle', 'Sign1', 'SparySign'],
+                data: coordinates[0].map((d, i) => {
+                    return {
+                        MapID: i === 0 ? DownLoad_MapID : '', 
+                        ID: i+1, 
+                        Longitude: d[0],
+                        Latitude: d[1],
+                        RudderAngle: coordinates[1][i][0],
+                        Sign1: 1,
+                        SparySign: coordinates[1][i][1]
+                    }
+                }) 
+            });
+            const mapData = Papa.parse(csvData,{
+                header:true
+            });
+            DownloadFile(`${DownLoad_MapID}.csv`, mapData);
+            console.log('downloadMap mapData');
+            console.log(mapData);
+            loading.close();
+
+        },
+
+        // 在车辆状态控制指令中添加心跳
+        aliveCounter(){
+            const timer = setInterval(async ()=>{
+                if(!this.vehicleID) return;
+                // 获取旧的控制指令数据
+                // 获取到原始的 控制指令 数据
+                let originalCtrData = await getVehicleCmd(this.vehicleID);
+                let originalCtrDataArr = originalCtrData.cmd.split(',');
+                // 判断获取到的数据是否符合规范
+                if(!originalCtrDataArr){
+                    ElMessage({
+                        message:'获取的控制数据不符合规范！',
+                        type:'warning'
+                    });
+                    return;
+                }
+                originalCtrDataArr[6] = originalCtrDataArr[6]*1 + 1;
+                let CtrDataArr = originalCtrDataArr.join(',');
+                const res = await updateVehicleCmd({
+                    target: this.vehicleID,
+                    cmd:CtrDataArr
+                });
+                console.log('aliveCounter',res);
+            }, 1000)
+            
+        },
+
+        // 判断车辆连接状态
+        vehicleContect(){
+            let oldCounter = 0;
+            const timer = setInterval(async ()=>{
+                if(!this.newDeviceID) return;
+                let device = await getDeviceStatus(this.newDeviceID);
+                let originalDeviceStatus = device.split(',');
+                if(originalDeviceStatus[3]*1 > oldCounter ) this.isContect = '已连接';
+                else this.isContect = '未连接';
+                oldCounter = originalDeviceStatus[3]*1;
+                
+            }, 1000);
+        },
+
+        async shiftSwitch(value){
+            console.log('shiftSwitch log');
+            // 获取旧的控制指令数据
+            // 获取到原始的 控制指令 数据
+            let originalCtrData = await getVehicleCmd(this.newVehicleID);
+            let originalCtrDataArr = originalCtrData.cmd.split(',');
+            // 判断获取到的数据是否符合规范
+            if(!originalCtrDataArr){
+                ElMessage({
+                    message:'获取的控制数据不符合规范！',
+                    type:'warning'
+                });
+                return;
+            }
+            if(value) originalCtrDataArr[7] = 1;
+            else originalCtrDataArr[7] = 0;
+            
+            let CtrDataArr = originalCtrDataArr.join(',');
+            const res = await updateVehicleCmd({
+                target: this.vehicleID,
+                cmd:CtrDataArr
+            });
+            console.log('shiftSwitch',res);
+
         },
         // findWorkPath(workPathID, mapArr){
         //     if(!mapArr) return;
@@ -604,6 +748,10 @@ export default {
         button, div{
             width: 150px;
         }
+    }
+    .buttonlist-last {
+        margin-top: 1rem;
+        text-align: right;
     }
 }
 .lineshow{
