@@ -5,13 +5,16 @@
       <el-main class="main">
         <!-- 上面的控制中心和地图显示 -->
         <el-row>
-          <el-col :span="10">
+          <!-- <el-col :span="10">
             <StatusShow />
           </el-col>
-          <el-col :span="1"></el-col>
-          <el-col :span="13">
+          <el-col :span="1"></el-col> -->
+          <el-col :span="24">
             <Map />
           </el-col>
+          <!-- <el-col :span="24">
+            <RealMonitor />
+          </el-col> -->
         </el-row>
         <!-- 下面的csv文件操作部分 -->
         <el-row style="margin-top: 1rem;">
@@ -28,6 +31,7 @@
 import StatusShow from './components/StatusShow.vue'
 import Map from './components/Map.vue'
 import OperateCSV from './components/OperateCSV.vue'
+import RealMonitor from './components/RealMonitor.vue'
 
 export default {
 

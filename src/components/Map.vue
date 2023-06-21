@@ -6,53 +6,194 @@
             </div>
         </template>
         <div class="mapGraphice">
-            <div id="map"></div>
+            <div id="container"></div>
         </div>
     </el-card>
 </template>
 
 <script>
+import { AMapObj, Location } from '../js/tools.js'
+import { Start_Icon, Termius_Icon, Via_Icon } from '../js/Icon.js'
+import { shallowRef } from '@vue/reactivity';
+import { ElMessage, ElLoading } from 'element-plus';
+import Marker from '../class/Marker.js'
 export default {
+    /**
+     * 87.571159 43.813519
+     * 87.569313 43.819402
+     * 87.559829 43.81804
+     * 87.562213 43.811816
+     * 87.571159 43.813519
+     */
+    data() {
+        return {
+
+        }
+    },
+    // 这里是vue3的特定用法，需要与vue2进行区别
+    setup() {
+        const MapObj = shallowRef(null);
+        const AMapObj = shallowRef(null);
+        return {
+            MapObj,
+            AMapObj,
+        }
+    },
     mounted() {
-        // this.setMap();
+        this.initMap();
     },
     methods: {
-        setMap() {
-            // var map = L.map('map').setView([51.505, -0.09], 13);
-            // L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            //     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            // }).addTo(map);
+        // 初始化地图
+        async initMap() {
+            // 显示加载
+            let loading = ElLoading.service({
+                text:"Loading..."
+            });
+            await AMapObj()
+            .then(AMap => {
+                this.AMapObj = AMap;
+                this.MapObj = new AMap.Map('container',{
+                    zoom: 15,
+                    // center:[9747794.003730796,5436103.370887655]
+                    center:[87.565923,43.810112]
+                });
+                // 地图加载完毕
+                this.MapObj.on('complete', ()=>{
+                    loading.close();
+                    // 路径规划
+                    this.routePlan();
+                })
+                // 添加点击事件
+                this.MapObj.on('click', (event)=>{
+                    console.log(event.lnglat.getLng(), event.lnglat.getLat());
+                })
+                // 添加工具条插件
+                const Toolbar = new AMap.ToolBar();
+                this.MapObj.addControl(Toolbar);
+                // add scale plugin
+                const Scale = new AMap.Scale();
+                this.MapObj.addControl(Scale);
+                // 获取定位
+                // this.makeLocate(AMap);
 
-            // L.marker([51.5, -0.09]).addTo(map)
-            //     .bindPopup('A pretty CSS popup.<br> Easily customizable.')
-            //     .openPopup();
-            var map = L.map('map').setView([40, 116], 5);
+                // 添加标记点
+                const marker = new Marker({
+                    AMap, 
+                    LngLat: new AMap.LngLat(87.565923,43.810112), 
+                    label: '乌鲁木齐',
+                    Icon: Start_Icon(AMap)
+                }).Init();
+                this.MapObj.add(marker);
+                
+                // 添加线路
+                this.addRoad();
+                // 添加多边形
+                this.addPolygon();
 
-            var coordinates = [
-                [ 34.1274, 120.2374 ],  
-                [ 35.9375, 121.8364 ],  
-                [ 36.38456, 123.7264 ],  
-                [ 40.7263, 125.3651 ],  
-                [ 45.2732, 129.2523 ],  
-                [ 55.2633, 134.47437 ]
+                
+
+                
+            })
+            .catch(err => {
+                console.log(err);
+                ElMessage({
+                    message: '地图初始化失败！！！',
+                    type: 'error',
+                })
+            })
+        },
+
+        // 进行定位
+        makeLocate(AMap){
+            const geolocation = Location(AMap);
+            this.MapObj.addControl(geolocation);
+            geolocation.getCurrentPosition((status, res) => {
+                console.log(status);
+                console.log(res);
+            });
+        },
+
+        // 添加线路
+        addRoad(){
+            const path = [
+                new this.AMapObj.LngLat(87.571159, 43.813519),
+                new this.AMapObj.LngLat(87.569313, 43.819402),
+                new this.AMapObj.LngLat(87.559829, 43.81804),
+                new this.AMapObj.LngLat(87.562213, 43.811816),
+                new this.AMapObj.LngLat(87.571159, 43.813519)
             ];
-            var coordinates1 = [
-                [ 34.1274, 120.2374 ],  
-                [ 40.27643, 100.364 ],  
-                [ 41.38456, 90.7264 ]
+
+            var polyline = new this.AMapObj.Polyline({
+                path: path,  
+                borderWeight: 3, // 线条宽度，默认为 1
+                strokeColor: 'red', // 线条颜色
+                lineJoin: 'round' // 折线拐点连接处样式
+            });
+
+            this.MapObj.add(polyline);
+        },
+
+        // 添加多边形
+        addPolygon(){
+            const path = [
+                new this.AMapObj.LngLat(87.573986, 43.812332),
+                new this.AMapObj.LngLat(87.573996, 43.812308),
+                new this.AMapObj.LngLat(87.572956, 43.812113),
+                new this.AMapObj.LngLat(87.573139, 43.811641),
+                new this.AMapObj.LngLat(87.574258, 43.81185),
+                new this.AMapObj.LngLat(87.57408, 43.812348),
+                new this.AMapObj.LngLat(87.573986, 43.812332)
             ];
 
-            var polyline = L.polyline(coordinates, {color: 'blue'}).addTo(map);
-            var polyline = L.polyline(coordinates1, {color: 'red'}).addTo(map);
-        }
+            // 创建多边形 Polygon 实例
+            const polygon = new this.AMapObj.Polygon({
+                path: path,  
+                strokeColor: "#FF33FF", 
+                strokeWeight: 6,
+                strokeOpacity: 0.2,
+                fillOpacity: 0.4,
+                fillColor: '#1791fc',
+                zIndex: 50,
+            });
+
+            //多边形 Polygon对象添加到 Map
+            this.MapObj.add(polygon);
+            // 缩放地图到合适的视野级别
+            this.MapObj.setFitView([ polygon ])
+        },
+
+        // 路径规划
+        routePlan(){
+            let driving = new this.AMapObj.Driving({
+                // 驾车路线规划策略，AMap.DrivingPolicy.LEAST_TIME是最快捷模式
+                policy: this.AMapObj.DrivingPolicy.LEAST_TIME,
+                map: this.MapObj
+            })
+            
+            var startLngLat = new this.AMapObj.LngLat(87.568573, 43.814814);
+            var endLngLat = new this.AMapObj.LngLat(87.57326, 43.818103);
+            
+            driving.search([87.568573, 43.814814], [87.57326, 43.818103], (status, result)=>{
+                console.log(status, result)
+            })
+        },
+    
+        
     }
 }
 </script>
 
 <style lang="less">
 .mapGraphice {
-    #map {
+    #container {
         height: 500px;
+
+        .amap-marker-label{
+            border: 0;
+            background-color: white;
+            border-radius: 3px;
+            padding: 6px 8px;
+        }
     }
 }
 </style>
