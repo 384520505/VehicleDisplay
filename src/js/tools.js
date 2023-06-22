@@ -44,7 +44,7 @@ const AMapObj = () => {
         AMapLoader.load({
             key: Key,       // 申请好的Web端开发者Key，首次调用 load 时必填
             version: "2.0", // 指定要加载的 JSAPI 的版本，缺省时默认为 1.4.15
-            plugins: ['AMap.Geolocation', 'AMap.ToolBar', 'AMap.Scale','AMap.Marker', 'AMap.Driving'],
+            plugins: ['AMap.Geolocation', 'AMap.ToolBar', 'AMap.Scale','AMap.Marker', 'AMap.Driving', 'AMap.Walking', 'AMap.MoveAnimation'],
         })
             .then(AMap => {
                 resolve(AMap);

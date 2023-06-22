@@ -7,13 +7,14 @@
         </template>
         <div class="mapGraphice">
             <div id="container"></div>
+            <div id="panel"></div>
         </div>
     </el-card>
 </template>
 
 <script>
 import { AMapObj, Location } from '../js/tools.js'
-import { Start_Icon, Termius_Icon, Via_Icon } from '../js/Icon.js'
+import { Start_Icon, Termius_Icon, Via_Icon, Car_Icon } from '../js/Icon.js'
 import { shallowRef } from '@vue/reactivity';
 import { ElMessage, ElLoading } from 'element-plus';
 import Marker from '../class/Marker.js'
@@ -53,15 +54,13 @@ export default {
             .then(AMap => {
                 this.AMapObj = AMap;
                 this.MapObj = new AMap.Map('container',{
+                    resizeEnable: true,
                     zoom: 15,
-                    // center:[9747794.003730796,5436103.370887655]
                     center:[87.565923,43.810112]
                 });
                 // 地图加载完毕
                 this.MapObj.on('complete', ()=>{
                     loading.close();
-                    // 路径规划
-                    this.routePlan();
                 })
                 // 添加点击事件
                 this.MapObj.on('click', (event)=>{
@@ -77,18 +76,15 @@ export default {
                 // this.makeLocate(AMap);
 
                 // 添加标记点
-                const marker = new Marker({
-                    AMap, 
-                    LngLat: new AMap.LngLat(87.565923,43.810112), 
-                    label: '乌鲁木齐',
-                    Icon: Start_Icon(AMap)
-                }).Init();
-                this.MapObj.add(marker);
-                
+                this.addMarker(new AMap.LngLat(87.565923,43.810112), '乌鲁木齐', Via_Icon(AMap));
                 // 添加线路
-                this.addRoad();
+                // this.addRoad();
                 // 添加多边形
-                this.addPolygon();
+                // this.addPolygon();
+                // 路径规划
+                const startLngLat = [87.568573, 43.814814];
+                const endLngLat = [87.57326, 43.818103];
+                // this.routePlan(startLngLat, endLngLat);
 
                 
 
@@ -111,6 +107,17 @@ export default {
                 console.log(status);
                 console.log(res);
             });
+        },
+
+        // 添加标记点
+        addMarker(LngLat, label, Icon){
+            const marker = new Marker({
+                AMap, 
+                LngLat, 
+                label,
+                Icon
+            }).Init();
+            this.MapObj.add(marker);
         },
 
         // 添加线路
@@ -163,17 +170,15 @@ export default {
         },
 
         // 路径规划
-        routePlan(){
+        // startLngLat: [123.2345, 45.346]; endLngLat:[133.123453, 45.36456]
+        routePlan(startLngLat, endLngLat){
             let driving = new this.AMapObj.Driving({
                 // 驾车路线规划策略，AMap.DrivingPolicy.LEAST_TIME是最快捷模式
                 policy: this.AMapObj.DrivingPolicy.LEAST_TIME,
-                map: this.MapObj
+                map: this.MapObj,
+                panel:'panel'
             })
-            
-            var startLngLat = new this.AMapObj.LngLat(87.568573, 43.814814);
-            var endLngLat = new this.AMapObj.LngLat(87.57326, 43.818103);
-            
-            driving.search([87.568573, 43.814814], [87.57326, 43.818103], (status, result)=>{
+            driving.search(startLngLat, endLngLat, (status, result)=>{
                 console.log(status, result)
             })
         },

@@ -44,8 +44,19 @@ export default{
     height: 400px;
 
     #video-container{
-        width: 100%;
-        height: 100%;
+        width: 100% !important;
+        height: 100% !important;
+        #video-container-wrap{
+            width: 100% !important;
+            .video-containerparent-wnd > div{
+                width: 100% !important;
+                height: 100% !important;
+            }
+            #video-container-loading-id-0{
+                height: 100% !important;
+            }
+        }
+        
     }
 }
 </style>

@@ -9,12 +9,21 @@
             <StatusShow />
           </el-col>
           <el-col :span="1"></el-col> -->
-          <el-col :span="24">
-            <Map />
-          </el-col>
+          
           <!-- <el-col :span="24">
-            <RealMonitor />
+            <Map />
           </el-col> -->
+          <el-col :span="24">
+            <el-tabs
+              v-model="activeName"
+              type="card"
+              class="shiftCard"
+              @tab-click="handleClick"
+            >
+              <el-tab-pane label="视频监控" name="first"><RealMonitor /></el-tab-pane>
+              <el-tab-pane label="地图" name="second"><Map /></el-tab-pane>
+            </el-tabs>
+          </el-col>
         </el-row>
         <!-- 下面的csv文件操作部分 -->
         <el-row style="margin-top: 1rem;">
@@ -37,7 +46,8 @@ export default {
 
   data() {
     return {
-      loading: null
+      loading: null,
+      activeName: 'second'
     }
   },
 
@@ -50,11 +60,16 @@ export default {
   mounted() {
     console.log('DOM结束加载...');
     // this.loading.close();
+  },
+  methods:{
+    handleClick(tab, event){
+      // console.log(tab, event)
+    },
   }
 }
 </script>
 
-<style lang="less">
+<style scoped lang="less">
 .common-layout {
   .header {
     line-height: 60px;
