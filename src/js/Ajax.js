@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { CameraUrl, AccessToken, CameraTokenUrl, StopContralUrl, StartContralUrl, DeviceSerial, AppKey, AppSecret } from './Constant.js'
 
 const IP = "http://39.98.84.198:8080";
 const workPath = "api/UGVService/ugv/getWorkPath/";
@@ -150,6 +151,116 @@ const updataDeviceStatus = (statusObj)=>{
 }
 
 
+// 获取摄像头的token
+const getCameraToken = ()=>{
+    return new Promise((resolve, reject)=>{
+        axios.post(CameraTokenUrl, {
+            appKey: AppKey,
+            appSecret: AppSecret
+        },{
+            headers:{
+                "Content-Type": "application/x-www-form-urlencoded"
+            }
+        })
+        .then(res=>{
+            console.log('getCameraToken', res);
+            resolve(res);
+        })
+        .catch(err=>{
+            reject(err);
+        });
+    });
+};
+
+// 控制摄像头的方向
+/* 操作命令：direction
+		0-上，
+		1-下，
+		2-左，
+		3-右，
+		4-左上，
+		5-左下，
+		6-右上，
+		7-右下，
+		8-放大，
+		9-缩小，
+		10-近焦距，
+		11-远焦距
+	*/
+const StopContral = (direction) => {
+    return new Promise((resolve, reject) => {
+        axios.post(StopContralUrl, {
+            accessToken: AccessToken,
+            deviceSerial: DeviceSerial,
+            channelNo: 1,
+            direction,
+        },{
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+        })
+        .then(res=>{
+            const {
+                code,
+                msg
+            } = res.data;
+            console.log(msg)
+            if (code === '200') {
+                resolve(msg)
+            }
+        })
+        .catch(err=>{
+            reject(err);
+        });
+    });
+}
+
+// 开始云台控制
+/* 操作命令：direction
+    0-上，
+    1-下，
+    2-左，
+    3-右，
+    4-左上，
+    5-左下，
+    6-右上，
+    7-右下，
+    8-放大，
+    9-缩小，
+    10-近焦距，
+    11-远焦距
+*/
+const StartContral = (direction, speed) => {
+    return new Promise((resolve, reject) => {
+        axios.post(StartContralUrl, {
+            accessToken: AccessToken,
+            deviceSerial: DeviceSerial,
+            channelNo: 1,
+            direction,
+            speed,
+        }, {
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+        })
+        .then(res=>{
+            console.log('StartContral', res);
+            const {
+                code,
+                msg
+            } = res.data;
+            console.log(msg)
+            if (code === '200') {
+                resolve(msg)
+            }
+        })
+        .catch(err=>{
+            reject(err);
+        });
+    });
+}
+
+
 export {
     putMap,
     getMap,
@@ -159,5 +270,8 @@ export {
     getVehicleCmd,
     updateVehicleCmd,
     getDeviceStatus,
-    updataDeviceStatus
+    updataDeviceStatus,
+    StartContral,
+    StopContral,
+    getCameraToken
 }

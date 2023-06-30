@@ -12,6 +12,7 @@ class Marker {
         this.LngLat = LngLat;
         this.label = label;
         this.Icon = Icon;
+        this.IconSize = Icon.getSize();
     };
 
     // 初始化
@@ -21,6 +22,8 @@ class Marker {
             position: this.LngLat,
             icon: this.Icon,
             title: this.label,
+            // 设置偏移量，使标记点标记在定位的中心点
+            offset:[-this.IconSize[0]/2, -this.IconSize[1]/2],
             label: {
                 offset: new AMap.Pixel(0, -20),
                 content: this.label
@@ -66,7 +69,7 @@ class Marker {
         this.MarkerObj.on('mouseover', () => {
             this.MarkerObj.setLabel({
                 offset: new AMap.Pixel(0, -20),  //设置文本标注偏移量
-                content: "乌鲁木齐", //设置文本标注内容
+                content: this.label, //设置文本标注内容
                 direction: 'right' //设置文本标注方位
             });
         })

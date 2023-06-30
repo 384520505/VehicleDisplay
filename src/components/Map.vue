@@ -18,6 +18,7 @@ import { Start_Icon, Termius_Icon, Via_Icon, Car_Icon } from '../js/Icon.js'
 import { shallowRef } from '@vue/reactivity';
 import { ElMessage, ElLoading } from 'element-plus';
 import Marker from '../class/Marker.js'
+import axios from 'axios'
 export default {
     /**
      * 87.571159 43.813519
@@ -50,13 +51,23 @@ export default {
             let loading = ElLoading.service({
                 text:"Loading..."
             });
+
+            
             await AMapObj()
             .then(AMap => {
+                // 创建卫星图层
+                const satellite = new AMap.TileLayer.Satellite();
+                // 创建网路
+                const roadNet = new AMap.TileLayer.RoadNet();
                 this.AMapObj = AMap;
                 this.MapObj = new AMap.Map('container',{
                     resizeEnable: true,
                     zoom: 15,
-                    center:[87.565923,43.810112]
+                    center:[87.565923,43.810112],
+                    layers:[
+                        satellite,
+                        roadNet
+                    ]
                 });
                 // 地图加载完毕
                 this.MapObj.on('complete', ()=>{
@@ -77,16 +88,18 @@ export default {
 
                 // 添加标记点
                 this.addMarker(new AMap.LngLat(87.565923,43.810112), '乌鲁木齐', Via_Icon(AMap));
+
+                // 添加车
+                const car = this.addMarker(new AMap.LngLat(87.565985,43.809772), 'car', Car_Icon(AMap));
+                this.moveMonit(car);
                 // 添加线路
                 // this.addRoad();
                 // 添加多边形
                 // this.addPolygon();
                 // 路径规划
-                const startLngLat = [87.568573, 43.814814];
-                const endLngLat = [87.57326, 43.818103];
-                // this.routePlan(startLngLat, endLngLat);
-
-                
+                const startLngLat = [87.565985, 43.809772];
+                const endLngLat = [87.566703, 43.809923];
+                this.routePlan(startLngLat, endLngLat);
 
                 
             })
@@ -118,6 +131,7 @@ export default {
                 Icon
             }).Init();
             this.MapObj.add(marker);
+            return marker;
         },
 
         // 添加线路
@@ -181,6 +195,17 @@ export default {
             driving.search(startLngLat, endLngLat, (status, result)=>{
                 console.log(status, result)
             })
+        },
+
+        // 运动监控
+        moveMonit(marker){
+            // const timer = setInterval(()=>{
+                // 获取运动物体的最新的位置
+                
+                // 更新位置及角度
+                // marker.setPosition(newPosition);
+                marker.setAngle(60); 
+            // }, 1000);
         },
     
         

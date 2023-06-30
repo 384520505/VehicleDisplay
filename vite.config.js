@@ -31,6 +31,11 @@ export default defineConfig({
         target: 'http://39.98.84.198:8080',
         changeOrigin: true,
         rewrite: path => path.replace(/^\/api/, '')
+      },
+      '/openys': {
+        target: 'https://open.ys7.com',
+        changeOrigin: true,
+        rewrite: path => path.replace(/^\/openys/, '')
       }
     }
   }
