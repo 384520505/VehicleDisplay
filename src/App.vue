@@ -10,10 +10,10 @@
           </el-col>
           <el-col :span="1"></el-col> -->
           
-          <!-- <el-col :span="24">
-            <Map />
-          </el-col> -->
           <el-col :span="24">
+            <Map />
+          </el-col>
+          <el-col :span="13">
             <el-tabs
               v-model="activeName"
               type="card"

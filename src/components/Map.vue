@@ -63,7 +63,8 @@ export default {
                 this.MapObj = new AMap.Map('container',{
                     resizeEnable: true,
                     zoom: 15,
-                    center:[87.565923,43.810112],
+                    // center:[87.565923,43.810112],
+                    center:[116.397428, 39.90923],
                     layers:[
                         satellite,
                         roadNet
@@ -87,19 +88,19 @@ export default {
                 // this.makeLocate(AMap);
 
                 // 添加标记点
-                this.addMarker(new AMap.LngLat(87.565923,43.810112), '乌鲁木齐', Via_Icon(AMap));
+                // this.addMarker(new AMap.LngLat(87.565923,43.810112), '乌鲁木齐', Via_Icon(AMap));
 
                 // 添加车
-                const car = this.addMarker(new AMap.LngLat(87.565985,43.809772), 'car', Car_Icon(AMap));
-                this.moveMonit(car);
+                const car = this.addMarker(new AMap.LngLat(116.399286, 39.907512), 'car', Car_Icon(AMap));
+                // this.moveMonit(car);
                 // 添加线路
-                // this.addRoad();
+                this.addRoad();
                 // 添加多边形
                 // this.addPolygon();
                 // 路径规划
-                const startLngLat = [87.565985, 43.809772];
-                const endLngLat = [87.566703, 43.809923];
-                this.routePlan(startLngLat, endLngLat);
+                // const startLngLat = [87.565985, 43.809772];
+                // const endLngLat = [87.566703, 43.809923];
+                // this.routePlan(startLngLat, endLngLat);
 
                 
             })
@@ -137,16 +138,17 @@ export default {
         // 添加线路
         addRoad(){
             const path = [
-                new this.AMapObj.LngLat(87.571159, 43.813519),
-                new this.AMapObj.LngLat(87.569313, 43.819402),
-                new this.AMapObj.LngLat(87.559829, 43.81804),
-                new this.AMapObj.LngLat(87.562213, 43.811816),
-                new this.AMapObj.LngLat(87.571159, 43.813519)
+                new this.AMapObj.LngLat(116.399286, 39.907512),
+                new this.AMapObj.LngLat(116.399713, 39.900332),
+                new this.AMapObj.LngLat(116.40668, 39.900725),
+                new this.AMapObj.LngLat(116.406594, 39.907774),
+                new this.AMapObj.LngLat(116.399286, 39.907512)
+                // new this.AMapObj.LngLat(87.571159, 43.813519)
             ];
 
             var polyline = new this.AMapObj.Polyline({
                 path: path,  
-                borderWeight: 3, // 线条宽度，默认为 1
+                borderWeight: 1, // 线条宽度，默认为 1
                 strokeColor: 'red', // 线条颜色
                 lineJoin: 'round' // 折线拐点连接处样式
             });
@@ -201,10 +203,23 @@ export default {
         moveMonit(marker){
             // const timer = setInterval(()=>{
                 // 获取运动物体的最新的位置
-                
+                // 模拟坐标更新
+                const path = [
+                    new this.AMapObj.LngLat(116.399286, 39.907512),
+                    new this.AMapObj.LngLat(116.399713, 39.900332),
+                    new this.AMapObj.LngLat(116.40668, 39.900725),
+                    new this.AMapObj.LngLat(116.406594, 39.907774),
+                    new this.AMapObj.LngLat(116.399286, 39.907512)
+                    // new this.AMapObj.LngLat(87.571159, 43.813519)
+                ];
                 // 更新位置及角度
-                // marker.setPosition(newPosition);
-                marker.setAngle(60); 
+                let i = 0;
+                setInterval(()=>{
+                    marker.setPosition(new this.AMapObj.LngLat(116.399286 + i*0.0001, 39.907512));
+                    console.log(i)
+                    i++;
+                },1000)
+                // marker.setAngle(60); 
             // }, 1000);
         },
     
