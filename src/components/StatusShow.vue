@@ -121,7 +121,7 @@ import { ElMessage, ElLoading } from 'element-plus';
 import { DownloadFile } from '../js/tools.js';
 import Papa from 'papaparse';
 import {DownLoad_MapID} from '../js/Constant.js'
-// import { bus } from '../js/EventBus.js'
+import { bus } from '../js/EventBus.js'
 
 export default {
     data() {
@@ -180,6 +180,10 @@ export default {
         isAuto_contrl(newVlaue){
             if(newVlaue) this.auto_contrl = '自主';
             else this.auto_contrl = '遥控';
+        },
+        // 监听mapID的变化，发生变化时，向Map组件发送最新的数据
+        mapID(newValue){
+            bus.emit('mapID', newValue);
         },
     },
 
@@ -365,9 +369,9 @@ export default {
 
 
         /**
-         * 对于车辆的开关状态、设备的开关状态、地图编号、车辆速度、车辆航向角、设备控制等级、心跳
-         * 原始车辆控制接口中 cmd字段的数据是一个字符串，其中1-7个数据按顺序排列，
-         * 分别表示：车辆的开关状态、设备的开关状态、地图编号、车辆速度、车辆航向角、设备控制等级、心跳
+         * 对于车辆的开关状态、设备的开关状态、地图编号、车辆速度、车辆航向角、设备控制等级、心跳、控制模式
+         * 原始车辆控制接口中 cmd字段的数据是一个字符串，其中1-8个数据按顺序排列，
+         * 分别表示：车辆的开关状态、设备的开关状态、地图编号、车辆速度、车辆航向角、设备控制等级、心跳、控制模式
          */
         async operSpeed(sign){
             // if(!this.speed){

@@ -5,25 +5,25 @@
       <el-main class="main">
         <!-- 上面的控制中心和地图显示 -->
         <el-row>
-          <!-- <el-col :span="10">
+          <el-col :span="10">
             <StatusShow />
           </el-col>
-          <el-col :span="1"></el-col> -->
+          <el-col :span="1"></el-col>
           
-          <el-col :span="24">
+          <!-- <el-col :span="24">
             <Map />
-          </el-col>
-          <!-- <el-col :span="13">
+          </el-col> -->
+          <el-col :span="13">
             <el-tabs
               v-model="activeName"
               type="card"
               class="shiftCard"
               @tab-click="handleClick"
             >
-              <el-tab-pane label="视频监控" name="first"><RealMonitor /></el-tab-pane>
+              <!-- <el-tab-pane label="视频监控" name="first"><RealMonitor /></el-tab-pane> -->
               <el-tab-pane label="地图" name="second"><Map /></el-tab-pane>
             </el-tabs>
-          </el-col> -->
+          </el-col>
         </el-row>
         <!-- 下面的csv文件操作部分 -->
         <el-row style="margin-top: 1rem;">

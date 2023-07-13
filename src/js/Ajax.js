@@ -11,6 +11,7 @@ const vehicleCmd = "api/UGVService/ugv/getCommand/";
 const putVehicleCmd = "api/UGVService/ugv/putCommand";
 const putMapPath = "api/UGVService/ugv/putMap";
 const getMapPath = "api/UGVService/ugv/getMap/";
+const getFunctionPointsPath = "api/UGVService/ugv/getFunctionPoints/";
 
 
 const putMap = (map)=>{
@@ -150,6 +151,20 @@ const updataDeviceStatus = (statusObj)=>{
     });
 }
 
+// 获取功能点集合
+const getFunctionPoints = (mapID)=>{
+    return new Promise((resolve, reject)=>{
+        axios.get(`${getFunctionPointsPath}${mapID}`)
+        .then(res=>{
+            if(res.status != 200) reject(res.statusText);
+            else resolve(res.data);
+        })
+        .catch(err=>{
+            reject(err);
+        });
+    });
+}
+
 
 // 获取摄像头的token
 const getCameraToken = ()=>{
@@ -271,6 +286,7 @@ export {
     updateVehicleCmd,
     getDeviceStatus,
     updataDeviceStatus,
+    getFunctionPoints,
     StartContral,
     StopContral,
     getCameraToken

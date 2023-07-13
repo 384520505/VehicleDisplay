@@ -13,16 +13,19 @@
 </template>
 
 <script>
-import { AMapObj, Location, ConvertFrom } from '../js/tools.js'
+import { AMapObj, Location, ConvertFrom, DataTransfrom } from '../js/tools.js'
 import { Start_Icon, Termius_Icon, Via_Icon, Car_Icon } from '../js/Icon.js'
 import { shallowRef } from '@vue/reactivity';
 import { ElMessage, ElLoading } from 'element-plus';
-import Marker from '../class/Marker.js'
-import axios from 'axios'
+import Marker from '../class/Marker.js';
+import { getMap, getFunctionPoints } from '../js/Ajax.js';
+import { DownLoad_MapID } from '../js/Constant.js';
+import { bus } from '../js/EventBus.js';
 export default {
     data() {
         return {
-
+            // 用来显示地图路线的编号
+            mapID:null,
         }
     },
     // 这里是vue3的特定用法，需要与vue2进行区别
@@ -87,7 +90,7 @@ export default {
 
                 const transformPos = await ConvertFrom(AMap, [116.2786158,39.9421013]);
                 const car = this.addMarker(transformPos.locations[0], 'car', Start_Icon(AMap));
-                // this.moveMonit(car);
+                this.moveMonit(car);
                 // 添加线路
                 this.addRoad();
                 // 添加多边形
@@ -132,23 +135,33 @@ export default {
 
         // 添加线路
         addRoad(){
-            const path = [
-                new this.AMapObj.LngLat(116.399286, 39.907512),
-                new this.AMapObj.LngLat(116.399713, 39.900332),
-                new this.AMapObj.LngLat(116.40668, 39.900725),
-                new this.AMapObj.LngLat(116.406594, 39.907774),
-                new this.AMapObj.LngLat(116.399286, 39.907512)
-                // new this.AMapObj.LngLat(87.571159, 43.813519)
-            ];
+            bus.on('mapID', async (mapID)=>{
+                this.mapID = mapID;
+                // 获取地图
+                const map = await getMap(mapID);
+                const mapData = DataTransfrom(map, DownLoad_MapID);
+                let path = [];
+                mapData.data.forEach((item, index)=>{
+                    path.push(new this.AMapObj.LngLat(item.Longitude, item.Latitude));
+                });
+                const transformPath = await ConvertFrom(this.AMapObj, path);
+                console.log('addRoad---148', transformPath);
+                if(transformPath.info != 'ok'){
+                    ElMessage({
+                        message: `路径显示失败！！！`,
+                        type: 'error',
+                    })
+                }
 
-            var polyline = new this.AMapObj.Polyline({
-                path: path,  
-                borderWeight: 2, // 线条宽度，默认为 1
-                strokeColor: 'red', // 线条颜色
-                lineJoin: 'round' // 折线拐点连接处样式
+                var polyline = new this.AMapObj.Polyline({
+                    path: transformPath.locations,  
+                    borderWeight: 2, // 线条宽度，默认为 1
+                    strokeColor: 'red', // 线条颜色
+                    lineJoin: 'round' // 折线拐点连接处样式
+                });
+
+                this.MapObj.add(polyline);
             });
-
-            this.MapObj.add(polyline);
         },
 
         // 添加多边形
@@ -196,13 +209,24 @@ export default {
 
         // 运动监控
         moveMonit(marker){
-            // const timer = setInterval(()=>{
+            const timer = setInterval(async ()=>{
                 // 获取运动物体的最新的位置（发送请求获取最新的坐标数据）
-
+                if(!this.mapID){
+                    console.log('地图编号为空！');
+                    return;
+                }
+                const coords = await getFunctionPoints(this.mapID);
+                if(!coords) return;
+                // 解析出功能点编号为 vehicleRTcoord 的数据
+                const vehicleRTcoord = coords.filter((item)=>{
+                    return item.id === 'vehicleRTcoord';
+                });
+                const transformPos = await ConvertFrom(this.AMapObj, vehicleRTcoord[0].coordinates);
+                if(transformPos.info === 'ok')
                 // 更新位置及角度
-                marker.setPosition(new this.AMapObj.LngLat(116.399486, 39.907512));
+                marker.setPosition(transformPos.locations[0]);
                 // marker.setAngle(60); 
-            // }, 1000);
+            }, 1000);
         },
     
         

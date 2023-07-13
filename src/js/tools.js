@@ -38,6 +38,30 @@ const DownloadFile = (name, jsonData) => {
     elemento.click();
 }
 
+// 数据转换（将获取的数据转起csv格式的数据）
+const DataTransfrom = (oldData, mapID)=>{
+    const { coordinates } = oldData;
+    if(!coordinates) return;
+    const csvData = Papa.unparse({
+        fields: ['MapID','ID', 'Longitude', 'Latitude', 'RudderAngle', 'Sign1', 'SparySign'],
+        data: coordinates[0].map((d, i) => {
+            return {
+                MapID: i === 0 ? mapID : '', 
+                ID: i+1, 
+                Longitude: d[0],
+                Latitude: d[1],
+                RudderAngle: coordinates[1][i][0],
+                Sign1: 1,
+                SparySign: coordinates[1][i][1]
+            }
+        }) 
+    });
+    const mapData = Papa.parse(csvData,{
+        header:true
+    });
+    return mapData;
+}
+
 // 加载AMapLoader对象
 const AMapObj = () => {
     return new Promise((resolve, reject) => {
@@ -92,6 +116,7 @@ const ConvertFrom = (AMap, lnglat)=>{
 export {
     FileToText,
     DownloadFile,
+    DataTransfrom,
     AMapObj,
     Location,
     ConvertFrom,
