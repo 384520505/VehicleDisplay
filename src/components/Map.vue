@@ -13,20 +13,13 @@
 </template>
 
 <script>
-import { AMapObj, Location } from '../js/tools.js'
+import { AMapObj, Location, ConvertFrom } from '../js/tools.js'
 import { Start_Icon, Termius_Icon, Via_Icon, Car_Icon } from '../js/Icon.js'
 import { shallowRef } from '@vue/reactivity';
 import { ElMessage, ElLoading } from 'element-plus';
 import Marker from '../class/Marker.js'
 import axios from 'axios'
 export default {
-    /**
-     * 87.571159 43.813519
-     * 87.569313 43.819402
-     * 87.559829 43.81804
-     * 87.562213 43.811816
-     * 87.571159 43.813519
-     */
     data() {
         return {
 
@@ -54,7 +47,7 @@ export default {
 
             
             await AMapObj()
-            .then(AMap => {
+            .then(async AMap => {
                 // 创建卫星图层
                 const satellite = new AMap.TileLayer.Satellite();
                 // 创建网路
@@ -64,7 +57,7 @@ export default {
                     resizeEnable: true,
                     zoom: 15,
                     // center:[87.565923,43.810112],
-                    center:[116.397428, 39.90923],
+                    center:[116.281498, 39.940666],
                     layers:[
                         satellite,
                         roadNet
@@ -90,8 +83,10 @@ export default {
                 // 添加标记点
                 // this.addMarker(new AMap.LngLat(87.565923,43.810112), '乌鲁木齐', Via_Icon(AMap));
 
-                // 添加车
-                const car = this.addMarker(new AMap.LngLat(116.399286, 39.907512), 'car', Car_Icon(AMap));
+                // 添加车 39.9421013， 116.2786158
+
+                const transformPos = await ConvertFrom(AMap, [116.2786158,39.9421013]);
+                const car = this.addMarker(transformPos.locations[0], 'car', Start_Icon(AMap));
                 // this.moveMonit(car);
                 // 添加线路
                 this.addRoad();
@@ -148,7 +143,7 @@ export default {
 
             var polyline = new this.AMapObj.Polyline({
                 path: path,  
-                borderWeight: 1, // 线条宽度，默认为 1
+                borderWeight: 2, // 线条宽度，默认为 1
                 strokeColor: 'red', // 线条颜色
                 lineJoin: 'round' // 折线拐点连接处样式
             });
@@ -202,23 +197,10 @@ export default {
         // 运动监控
         moveMonit(marker){
             // const timer = setInterval(()=>{
-                // 获取运动物体的最新的位置
-                // 模拟坐标更新
-                const path = [
-                    new this.AMapObj.LngLat(116.399286, 39.907512),
-                    new this.AMapObj.LngLat(116.399713, 39.900332),
-                    new this.AMapObj.LngLat(116.40668, 39.900725),
-                    new this.AMapObj.LngLat(116.406594, 39.907774),
-                    new this.AMapObj.LngLat(116.399286, 39.907512)
-                    // new this.AMapObj.LngLat(87.571159, 43.813519)
-                ];
+                // 获取运动物体的最新的位置（发送请求获取最新的坐标数据）
+
                 // 更新位置及角度
-                let i = 0;
-                setInterval(()=>{
-                    marker.setPosition(new this.AMapObj.LngLat(116.399286 + i*0.0001, 39.907512));
-                    console.log(i)
-                    i++;
-                },1000)
+                marker.setPosition(new this.AMapObj.LngLat(116.399486, 39.907512));
                 // marker.setAngle(60); 
             // }, 1000);
         },

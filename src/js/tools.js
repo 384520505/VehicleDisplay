@@ -73,6 +73,19 @@ const Location = (AMap) => {
     return geolocation;
 }
 
+// 坐标系转换
+const ConvertFrom = (AMap, lnglat)=>{
+    return new Promise((resolve, reject)=>{
+        AMap.convertFrom(lnglat, 'gps', (status, result)=>{
+            if(result.info === 'ok'){
+                resolve(result);
+            }else{
+                reject(status);
+            }
+        });
+    });
+}
+
 
 
 
@@ -81,4 +94,5 @@ export {
     DownloadFile,
     AMapObj,
     Location,
+    ConvertFrom,
 }

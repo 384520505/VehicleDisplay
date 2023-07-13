@@ -13,7 +13,7 @@
           <el-col :span="24">
             <Map />
           </el-col>
-          <el-col :span="13">
+          <!-- <el-col :span="13">
             <el-tabs
               v-model="activeName"
               type="card"
@@ -23,7 +23,7 @@
               <el-tab-pane label="视频监控" name="first"><RealMonitor /></el-tab-pane>
               <el-tab-pane label="地图" name="second"><Map /></el-tab-pane>
             </el-tabs>
-          </el-col>
+          </el-col> -->
         </el-row>
         <!-- 下面的csv文件操作部分 -->
         <el-row style="margin-top: 1rem;">
