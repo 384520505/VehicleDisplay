@@ -110,6 +110,23 @@ const ConvertFrom = (AMap, lnglat)=>{
     });
 }
 
+// 数组拆封工具
+const ArrDisasseTool = (bigArr)=>{
+    const result = [];
+    const maxChunkSize = 500; // 每个小数组最大的长度
+    const chunkCount = Math.ceil(bigArr.length / maxChunkSize); // 小数组的个数
+    
+    for (let i = 0; i < chunkCount; i++) {
+        const start = i * maxChunkSize;
+        const end = start + maxChunkSize;
+        const chunk = bigArr.slice(start, end);
+        
+        result.push(chunk);
+    }
+    
+    return result;
+}
+
 
 
 
@@ -120,4 +137,5 @@ export {
     AMapObj,
     Location,
     ConvertFrom,
+    ArrDisasseTool,
 }

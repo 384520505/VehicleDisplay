@@ -14,6 +14,10 @@ window._AMapSecurityConfig = {
     securityJsCode: Security
 };
 
+app.config.devtools = true
+app.config.debug = true
+app.config.productionTip = false
+
 // app.use(VueLoading)
 app.use(ElementPlus)
 // app.use(router)

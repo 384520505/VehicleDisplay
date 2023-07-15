@@ -13,7 +13,7 @@
 </template>
 
 <script>
-import { AMapObj, Location, ConvertFrom, DataTransfrom } from '../js/tools.js'
+import { AMapObj, Location, ConvertFrom, DataTransfrom, ArrDisasseTool } from '../js/tools.js'
 import { Start_Icon, Termius_Icon, Via_Icon, Car_Icon } from '../js/Icon.js'
 import { shallowRef } from '@vue/reactivity';
 import { ElMessage, ElLoading } from 'element-plus';
@@ -26,6 +26,8 @@ export default {
         return {
             // 用来显示地图路线的编号
             mapID:null,
+            // 路线列表
+            PolylineList:[],
         }
     },
     // 这里是vue3的特定用法，需要与vue2进行区别
@@ -133,36 +135,43 @@ export default {
             return marker;
         },
 
-        // 添加线路
+        // 添加线路（请求获取的路线）
         addRoad(){
             bus.on('mapID', async (mapID)=>{
+                this.clearRoad();
                 this.mapID = mapID;
                 // 获取地图
                 const map = await getMap(mapID);
                 const mapData = DataTransfrom(map, DownLoad_MapID);
                 let path = [];
                 mapData.data.forEach((item, index)=>{
-                    path.push(new this.AMapObj.LngLat(item.Longitude, item.Latitude));
+                    if(item.Longitude == 0 || item.Latitude == 0) ;
+                    else path.push(new this.AMapObj.LngLat(item.Longitude, item.Latitude));
                 });
-                const transformPath = await ConvertFrom(this.AMapObj, path);
-                console.log('addRoad---148', transformPath);
-                if(transformPath.info != 'ok'){
-                    ElMessage({
-                        message: `路径显示失败！！！`,
-                        type: 'error',
-                    })
-                }
+                
+                let pathArrs = ArrDisasseTool(path);
+                pathArrs.forEach(async path=>{
+                    const transformPath = await ConvertFrom(this.AMapObj, path);
+                    if(transformPath.info != 'ok'){
+                        ElMessage({
+                            message: `路径显示失败！！！`,
+                            type: 'error',
+                        })
+                    }
 
-                var polyline = new this.AMapObj.Polyline({
-                    path: transformPath.locations,  
-                    borderWeight: 2, // 线条宽度，默认为 1
-                    strokeColor: 'red', // 线条颜色
-                    lineJoin: 'round' // 折线拐点连接处样式
-                });
+                    var polyline = new this.AMapObj.Polyline({
+                        path: transformPath.locations,
+                        strokeWeight: 3, // 线条宽度，默认为 1
+                        strokeColor: 'red', // 线条颜色
+                        lineJoin: 'round' // 折线拐点连接处样式
+                    });
 
-                this.MapObj.add(polyline);
+                    this.MapObj.add(polyline);
+                    this.PolylineList.push(polyline);
+                })
             });
         },
+
 
         // 添加多边形
         addPolygon(){
@@ -227,6 +236,15 @@ export default {
                 marker.setPosition(transformPos.locations[0]);
                 // marker.setAngle(60); 
             }, 1000);
+        },
+
+        // 清楚路线
+        clearRoad(){
+            this.PolylineList.forEach((polyline) => {
+                console.log('clearRoad---244', polyline);
+                polyline.destroy();
+            });
+            this.PolylineList.length = 0;
         },
     
         
