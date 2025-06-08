@@ -33,6 +33,14 @@
                     </el-button>
                 </el-col>
             </el-row>
+
+            <!-- Preview Table -->
+            <div class="preview-table-container" v-if="previewRows.length > 0">
+                <el-table :data="previewRows" style="width: 100%;" border stripe>
+                    <el-table-column v-for="header in previewHeaders" :key="header" :prop="header" :label="header">
+                    </el-table-column>
+                </el-table>
+            </div>
         </el-card>
     </div>
 </template>
@@ -50,6 +58,8 @@ export default {
             mapId:'',
             mapString:'',
             mapData:'',
+            previewHeaders: [],
+            previewRows: [],
         }
     },
 
@@ -62,11 +72,59 @@ export default {
         async selectFile(file) {
             const mapString = await FileToText(file.raw);
             this.mapString = mapString;
+            const MAX_PREVIEW_ROWS = 10;
+
+            let fullParsedDataForMapData; // To store the complete parsed data for this.mapData
+
+            // Parse CSV for preview
+            const parsedDataWithHeader = Papa.parse(mapString, { header: true, skipEmptyLines: true });
+            if (parsedDataWithHeader.data && parsedDataWithHeader.data.length > 0 && parsedDataWithHeader.meta.fields && parsedDataWithHeader.meta.fields.length > 0) {
+                this.previewHeaders = parsedDataWithHeader.meta.fields;
+                this.previewRows = parsedDataWithHeader.data.slice(0, MAX_PREVIEW_ROWS);
+                fullParsedDataForMapData = { data: parsedDataWithHeader.data, meta: { fields: parsedDataWithHeader.meta.fields } };
+            } else {
+                const parsedDataNoHeader = Papa.parse(mapString, { skipEmptyLines: true });
+                if (parsedDataNoHeader.data && parsedDataNoHeader.data.length > 0) {
+                    if (parsedDataNoHeader.data.length === 1 && parsedDataNoHeader.data[0].length === 1 && parsedDataNoHeader.data[0][0] === "") {
+                        this.previewHeaders = [];
+                        this.previewRows = [];
+                        fullParsedDataForMapData = { data: [], meta: { fields: [] } };
+                    } else {
+                        this.previewHeaders = parsedDataNoHeader.data[0].map((_, index) => `Column ${index + 1}`);
+                        const dataRows = parsedDataNoHeader.data.slice(1);
+                        // If the file had only one row of data and no actual headers.
+                        if (parsedDataNoHeader.data.length === 1) {
+                            this.previewRows = parsedDataNoHeader.data.slice(0, MAX_PREVIEW_ROWS);
+                            fullParsedDataForMapData = { data: parsedDataNoHeader.data, meta: { fields: this.previewHeaders } };
+                        } else {
+                            this.previewRows = dataRows.slice(0, MAX_PREVIEW_ROWS);
+                            fullParsedDataForMapData = { data: dataRows, meta: { fields: this.previewHeaders } };
+                        }
+                         // Ensure fullParsedDataForMapData.data uses original first row if it was actual data
+                        if (parsedDataNoHeader.data.length === 1) {
+                             // fullParsedDataForMapData is already set correctly above for this case
+                        } else if (parsedDataWithHeader.meta.fields === undefined || parsedDataWithHeader.meta.fields.length === 0) {
+                            // If PapaParse didn't find headers, the first row is data, not to be sliced off for fullParsedDataForMapData
+                            fullParsedDataForMapData = {data: parsedDataNoHeader.data, meta: {fields: this.previewHeaders}};
+                        }
+
+                    }
+                } else {
+                    this.previewHeaders = [];
+                    this.previewRows = [];
+                    fullParsedDataForMapData = { data: [], meta: { fields: [] } };
+                }
+            }
+
             let MapID = this.isNewStructCSVData(mapString);
-            // if csv data existed MapID field, full the this.mapId and 读取带有MapID的csv数据
             if(MapID){
                 this.mapId = MapID;
-                this.readCSVData(mapString);
+                this.readCSVData(mapString); // This reads the full mapString again, populating this.mapData correctly.
+                                            // So, fullParsedDataForMapData is not used in this specific branch.
+            } else if (fullParsedDataForMapData && fullParsedDataForMapData.data.length > 0) {
+                 this.mapData = { data: fullParsedDataForMapData.data, meta: { fields: fullParsedDataForMapData.meta.fields } };
+            } else {
+                this.mapData = { data: [], meta: { fields: [] } }; // Ensure mapData is initialized
             }
         },
         // 超出文件数量
@@ -190,7 +248,7 @@ export default {
 
 </script>
 
-<style lang="less">
+<style scoped lang="less">
 .contaier {
     .card-header {
         display: flex;
@@ -234,6 +292,24 @@ export default {
 
             
         }
+    }
+
+    .preview-table-container {
+        margin-top: 1rem;
+        max-height: 300px; /* Adjust as needed */
+        overflow: auto;
+        width: 100%;
+        border: 1px solid #ebeef5; // Optional: to match el-table border
+    }
+
+    .preview-table-container .el-table th {
+        font-weight: bold;
+        // background-color: #f5f7fa; // Optional: header background
+    }
+
+    // Ensure the table itself within the container also respects the container's width
+    .preview-table-container .el-table {
+        width: 100%;
     }
 }
 </style>
